@@ -1,0 +1,25 @@
+[project]
+name = "speech_datasets"
+version = "0.0.1"
+description = ""
+authors = [
+    {name = "Christoph Minixhofer", email = "christoph.minixhofer@gmail.com"},
+]
+dependencies = [
+    "simple-hifigan @ git+https://github.com/MiniXC/simple_hifigan.git",
+    "simple-titanet @ git+https://github.com/MiniXC/simple_titanet.git",
+    "numpy>=1.24.4",
+    "transformers>=4.33.2",
+    "scipy>=1.9.3",
+    "pillow>=10.0.1",
+    "vocex==0.1.11",
+    "humanhash3>=0.0.6",
+    "datasets>=2.14.5",
+    "alignments>=0.1.7",
+    "phonemizer>=3.2.1",
+    "umap-learn>=0.5.4",
+]
+requires-python = ">=3.8"
+readme = "README.md"
+license = {text = "MIT"}
+
