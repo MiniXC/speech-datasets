@@ -22,11 +22,8 @@ def resample(x, vpw=5):
     return np.interp(np.linspace(0, 1, vpw), np.linspace(0, 1, len(x)), x)
 
 
-def locality_sensitive_hashing(x, n_bits=20):
-    torch.random.manual_seed(0)
-    hyperplanes = torch.randn(n_bits, x.shape[-1])
-    hashes = torch.matmul(x, hyperplanes.T)
-    return hashes
+def locality_sensitive_hashing(x, hyperplanes):
+    return torch.matmul(x, hyperplanes.T)
 
 
 def zero_split(ids):
@@ -76,14 +73,14 @@ def from_img(x, min_val=0, max_val=1):
 
 
 class Preprocessor:
-    def __init__(self, target_location):
+    def __init__(self, target_location, device=None):
         self.use_vocex = True
         self.phone_processor = Wav2Vec2Processor.from_pretrained(
             "facebook/wav2vec2-xlsr-53-espeak-cv-ft"
         )
         self.phone_model = Wav2Vec2ForCTC.from_pretrained(
             "facebook/wav2vec2-xlsr-53-espeak-cv-ft"
-        )
+        ).to(device)
         self.id2phone = self.phone_processor.tokenizer.decoder
         self.id2phone[len(self.id2phone)] = "<sil>"
         self.synthesiser = Synthesiser()
@@ -91,6 +88,9 @@ class Preprocessor:
             self.titanet = TitaNet(encoder_output=True, load_pretrained=True)
             self.titanet.eval()
         self.vocex = Vocex.from_pretrained("cdminix/vocex")
+        self.vocex.model.eval()
+        self.device = device
+        self.vocex.model.to(self.device)
         self.target_location = target_location
         # make target location if it doesn't exist
         Path(self.target_location).mkdir(parents=True, exist_ok=True)
@@ -107,6 +107,8 @@ class Preprocessor:
         self.length_range = (0, 50)
         self.mel_range = (-11, 2)
         self.n_planes = 40
+        torch.random.manual_seed(0)
+        self.hyperplanes = torch.randn((self.n_planes, 256)).to(self.device)
 
     def __call__(self, batch):
         batched_audio = []
@@ -119,19 +121,19 @@ class Preprocessor:
         for b in batch:
             # hash the name of the file
             h = sha256()
-            h.update(b["audio"].encode())
+            h.update(b["id"].encode())
             h = h.hexdigest()
             hashes.append(h)
             # hash the speaker
             h = sha256()
-            h.update(b["speaker"].encode())
+            h.update(str(b["speaker_id"]).encode())
             h = h.hexdigest()
             h = humanhash.humanize(h).replace("-", "_")
             spk_dir = self.target_location / h
             spk_dir.mkdir(parents=True, exist_ok=True)
             spk_dirs.append(spk_dir)
             # book
-            book = Path(b["audio"]).name.split("_")[1]
+            book = str(b["chapter_id"])
             book_hash = sha256()
             book_hash.update(book.encode())
             book_hash = book_hash.hexdigest()
@@ -139,7 +141,9 @@ class Preprocessor:
             book_dir.mkdir(parents=True, exist_ok=True)
             book_dirs.append(book_dir)
 
-            audio, sr = torchaudio.load(b["audio"])
+            # audio, sr = torchaudio.load(b["audio"]["path"])
+            audio = torch.tensor(b["audio"]["array"])
+            sr = b["audio"]["sampling_rate"]
             audio = audio / torch.max(torch.abs(audio))
             if sr != 16000:
                 audio16 = torchaudio.transforms.Resample(sr, 16000)(audio)
@@ -151,6 +155,8 @@ class Preprocessor:
                             titanet_encoder.squeeze(0).transpose(0, 1)
                         )
                         batched_speaker_global.append(titanet_overall)
+            else:
+                audio16 = audio
             batched_audio.append(audio.squeeze(0))
             batched_audio16.append(audio16.squeeze(0))
         batched_audio = nn.utils.rnn.pad_sequence(
@@ -170,9 +176,9 @@ class Preprocessor:
 
         # retrieve logits
         with torch.no_grad():
-            logits = self.phone_model(input_values).logits
+            logits = self.phone_model(input_values.to(self.device)).logits.cpu()
 
-        mels, mels_mask = self.synthesiser.wavs_to_mel(batched_audio, sr=sr)
+        mels, mels_mask = self.synthesiser.wavs_to_mel(batched_audio.float(), sr=sr)
         # fp16
         # mels = mels.half()
 
@@ -186,7 +192,9 @@ class Preprocessor:
             batched_speaker = (batched_speaker - batched_speaker.mean()) / (
                 batched_speaker.std() + 1e-7
             )
-            batched_speaker = locality_sensitive_hashing(batched_speaker, self.n_planes)
+            batched_speaker = locality_sensitive_hashing(
+                batched_speaker, self.hyperplanes
+            )
             batched_speaker = torch.clamp(
                 batched_speaker, self.speaker_range[0], self.speaker_range[1]
             )
@@ -238,14 +246,16 @@ class Preprocessor:
             with torch.no_grad():
                 if len(mels[i]) <= 512:
                     vocex_results = self.vocex.model(
-                        mels[i].unsqueeze(0), inference=True
+                        mels[i].unsqueeze(0).to(self.device), inference=True
                     )
                 else:
                     mel_chunks = torch.split(mels[i], 512, dim=0)
                     chunk_results = []
                     for chunk in mel_chunks:
                         chunk_results.append(
-                            self.vocex.model(chunk.unsqueeze(0), inference=True)
+                            self.vocex.model(
+                                chunk.unsqueeze(0).to(self.device), inference=True
+                            )
                         )
                     vocex_results = {
                         "measures": {},
@@ -277,18 +287,17 @@ class Preprocessor:
             vad = torch.clamp(vad, self.vad_range[0], self.vad_range[1])
             vad = (vad - self.vad_range[0]) / (self.vad_range[1] - self.vad_range[0])
             dvec = vocex_results["dvector"][0]
-            np.save(save_dir / f"{utt_hash}_dvec.npy", dvec.numpy())
             if self.use_vocex:
                 dvec_time = vocex_results["dvector_time"][0]
-                dvec_time = locality_sensitive_hashing(dvec_time, self.n_planes)
+                dvec_time = locality_sensitive_hashing(dvec_time, self.hyperplanes)
                 dvec_time = torch.clamp(
                     dvec_time, self.speaker_range[0], self.speaker_range[1]
                 )
                 dvec_time = (dvec_time - self.speaker_range[0]) / (
                     self.speaker_range[1] - self.speaker_range[0]
                 )
-                batched_speaker.append(dvec_time.numpy())
-                batched_speaker_global.append(dvec.numpy())
+                batched_speaker.append(dvec_time.cpu().numpy())
+                batched_speaker_global.append(dvec.cpu().numpy())
             current_idx = 0
             vals_per_window = 10
             prosody = np.zeros((len(phone_lengths[i]), vals_per_window * 3 + 1))
@@ -300,9 +309,9 @@ class Preprocessor:
                     continue
                 if current_idx + d > len(pitch):
                     continue
-                pitch_window = pitch[current_idx : current_idx + d]
-                energy_window = energy[current_idx : current_idx + d]
-                va_window = vad[current_idx : current_idx + d]
+                pitch_window = pitch[current_idx : current_idx + d].cpu()
+                energy_window = energy[current_idx : current_idx + d].cpu()
+                va_window = vad[current_idx : current_idx + d].cpu()
                 prosody[j, 1 : vals_per_window + 1] = resample(
                     pitch_window, vals_per_window
                 )
