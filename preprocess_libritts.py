@@ -30,7 +30,7 @@ for split, name in splits.items():
         collate_fn=Preprocessor(
             target_location=f"data/{split}",
             device=torch.device("cuda"),
-        ),
+        ).copy_transcripts_only,
     )
 
     for i, batch in tqdm(enumerate(dataloader), desc=f"Preprocessing {split}"):

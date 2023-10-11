@@ -95,10 +95,10 @@ class Preprocessor:
         # make target location if it doesn't exist
         Path(self.target_location).mkdir(parents=True, exist_ok=True)
         # check if empty
-        if len(os.listdir(self.target_location)) != 0:
-            raise ValueError(
-                "Target location is not empty, please empty it before running"
-            )
+        #if len(os.listdir(self.target_location)) != 0:
+        #    raise ValueError(
+        #        "Target location is not empty, please empty it before running"
+        #    )
         self.target_location = Path(self.target_location)
         self.pitch_range = (50, 300)
         self.energy_range = (0, 0.2)
@@ -109,6 +109,34 @@ class Preprocessor:
         self.n_planes = 40
         torch.random.manual_seed(0)
         self.hyperplanes = torch.randn((self.n_planes, 256)).to(self.device)
+
+    def copy_transcripts_only(self, batch):
+        for b in batch:
+            # hash the name of the file
+            h = sha256()
+            h.update(b["id"].encode())
+            file_hash = h.hexdigest()
+            # hash the speaker
+            h = sha256()
+            h.update(str(b["speaker_id"]).encode())
+            h = h.hexdigest()
+            h = humanhash.humanize(h).replace("-", "_")
+            spk_dir = self.target_location / h
+            spk_dir.mkdir(parents=True, exist_ok=True)
+            # book
+            book = str(b["chapter_id"])
+            book_hash = sha256()
+            book_hash.update(book.encode())
+            book_hash = book_hash.hexdigest()
+            book_dir = spk_dir / book_hash
+            book_dir.mkdir(parents=True, exist_ok=True)
+
+            text = b["text"]
+            with open(book_dir / f"{file_hash}_text.txt", "w") as f:
+                f.write(text)
+
+        return batch
+
 
     def __call__(self, batch):
         batched_audio = []
