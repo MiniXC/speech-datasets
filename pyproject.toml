@@ -8,7 +8,6 @@ authors = [
 dependencies = [
     "simple-hifigan @ git+https://github.com/MiniXC/simple_hifigan.git",
     "simple-titanet @ git+https://github.com/MiniXC/simple_titanet.git",
-    "numpy>=1.24.4",
     "transformers>=4.33.2",
     "scipy>=1.9.3",
     "pillow>=10.0.1",
