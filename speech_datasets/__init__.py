@@ -154,14 +154,18 @@ class Preprocessor:
         new_batch = []
         for b in batch:
             filename = Path(b["id"])
-            speaker = b["speaker"]
-            chapter = filename.name.split("_")[1]
+            speaker = str(b["speaker"])
+            if "_" in filename.name:
+                chapter = filename.name.split("_")[1]
+            else:
+                chapter = filename.name.split("-")[1]
 
             directory = self.target_location / speaker / chapter
             directory.mkdir(parents=True, exist_ok=True)
 
             # check if item has already been processed
             if (directory / f"{filename.stem}_mel.png").exists():
+                print(f"Skipping {filename.stem}")
                 continue
 
             new_batch.append(b)

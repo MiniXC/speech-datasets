@@ -7,10 +7,10 @@ from tqdm.auto import tqdm
 
 from speech_datasets import Preprocessor
 
-dataset = load_dataset("../librispeech_asr/librispeech_asr.py")
+dataset = load_dataset("librispeech_asr/librispeech_asr.py")
 
 splits = {
-    #"train_clean_100": "train.clean.100",
+    "train_clean_100": "train.clean.100",
     "train_clean_360": "train.clean.360",
     "train_other_500": "train.other.500",
     "dev_clean": "validation.clean",
@@ -18,13 +18,6 @@ splits = {
     "test_clean": "test.clean",
     "test_other": "test.other",
 }
-
-# splits = {
-#     "train_clean_100": "train.100",
-#     "train_clean_360": "train.360",
-#     "dev_clean": "validation",
-#     "test_clean": "test",
-# }
 
 for split, name in splits.items():
     BATCH_SIZE = 4
@@ -34,12 +27,14 @@ for split, name in splits.items():
         batch_size=BATCH_SIZE,
         shuffle=False,
         collate_fn=Preprocessor(
-            target_location=f"data/{split}",
-            device="cpu",
+            target_location=f"/root/data/librispeech/{split}",
+            device="cuda:0",
             allow_overwrite=True,
         ),
-        #num_workers=os.cpu_count()//2,
+        # num_workers=os.cpu_count()//2,
     )
 
-    for i, batch in tqdm(enumerate(dataloader), desc=f"Preprocessing {split}", total=len(dataloader)):
+    for i, batch in tqdm(
+        enumerate(dataloader), desc=f"Preprocessing {split}", total=len(dataloader)
+    ):
         pass

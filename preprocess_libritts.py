@@ -19,13 +19,6 @@ splits = {
     "test_other": "test.other",
 }
 
-# splits = {
-#     "train_clean_100": "train.100",
-#     "train_clean_360": "train.360",
-#     "dev_clean": "validation",
-#     "test_clean": "test",
-# }
-
 for split, name in splits.items():
     BATCH_SIZE = 4
 
