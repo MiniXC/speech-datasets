@@ -7,7 +7,7 @@ from tqdm.auto import tqdm
 
 from speech_datasets import Preprocessor
 
-dataset = load_dataset("cdminix/libritts-aligned")
+dataset = load_dataset("../librispeech_asr/librispeech_asr.py")
 
 splits = {
     #"train_clean_100": "train.clean.100",

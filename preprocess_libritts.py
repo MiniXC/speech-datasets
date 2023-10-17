@@ -7,14 +7,14 @@ from tqdm.auto import tqdm
 
 from speech_datasets import Preprocessor
 
-dataset = load_dataset("../librispeech_asr/librispeech_asr.py")
+dataset = load_dataset("cdminix/libritts-aligned")
 
 splits = {
-    #"train_clean_100": "train.clean.100",
+    "train_clean_100": "train.clean.100",
     "train_clean_360": "train.clean.360",
     "train_other_500": "train.other.500",
-    "dev_clean": "validation.clean",
-    "dev_other": "validation.other",
+    "dev_clean": "dev.clean",
+    "dev_other": "dev.other",
     "test_clean": "test.clean",
     "test_other": "test.other",
 }
@@ -35,11 +35,13 @@ for split, name in splits.items():
         shuffle=False,
         collate_fn=Preprocessor(
             target_location=f"data/{split}",
-            device="cpu",
+            device="cuda:0",
             allow_overwrite=True,
         ),
-        #num_workers=os.cpu_count()//2,
+        # num_workers=os.cpu_count()//2,
     )
 
-    for i, batch in tqdm(enumerate(dataloader), desc=f"Preprocessing {split}", total=len(dataloader)):
+    for i, batch in tqdm(
+        enumerate(dataloader), desc=f"Preprocessing {split}", total=len(dataloader)
+    ):
         pass

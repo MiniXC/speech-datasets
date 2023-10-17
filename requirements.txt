@@ -8,4 +8,4 @@ datasets>=2.14.5
 alignments>=0.1.7
 phonemizer>=3.2.1
 umap-learn>=0.5.4
-numpy==1.23.5
+phones==0.0.7
