@@ -1,5 +1,5 @@
 import os
-
+import argparse
 import torch
 from datasets import load_dataset
 from torch.utils.data import DataLoader
@@ -19,19 +19,22 @@ splits = {
     "test_other": "test.other",
 }
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--device", type=str, default="cuda:0")
+parser.add_argument("--target_location", type=str, default="data")
+args = parser.parse_args()
+
 for split, name in splits.items():
     BATCH_SIZE = 4
-
     dataloader = DataLoader(
         dataset[name],
         batch_size=BATCH_SIZE,
         shuffle=False,
         collate_fn=Preprocessor(
-            target_location=f"/root/data/librispeech/{split}",
-            device="cuda:0",
+            target_location=f"{args.target_location}/{split}",
+            device=args.device,
             allow_overwrite=True,
         ),
-        # num_workers=os.cpu_count()//2,
     )
 
     for i, batch in tqdm(
