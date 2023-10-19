@@ -224,6 +224,8 @@ class Preprocessor:
             ids = resample_nearest(ids, mels[i].shape[0])
             predicted_ids.append(ids)
 
+        skip_idxs = []
+
         for i in range(len(predicted_ids)):
             id_factor = mels[i].shape[0] / len(predicted_ids[i])
             # add silence tokens
@@ -235,12 +237,18 @@ class Preprocessor:
                     predicted_ids[i][silence_start:silence_end] = len(self.id2phone) - 2
                 else:
                     predicted_ids[i][silence_start:silence_end] = len(self.id2phone) - 3
-            predicted_ids[i] = fill_sequence(predicted_ids[i])
+            try:
+                predicted_ids[i] = fill_sequence(predicted_ids[i])
+            except IndexError:
+                skip_idxs.append(i)
 
         batched_speaker = []
         batched_speaker_global = []
 
         for i in range(len(new_batch)):
+            if i in skip_idxs:
+                continue
+
             save_dir = book_dirs[i]
             utt_hash = hashes[i]
             # write text
