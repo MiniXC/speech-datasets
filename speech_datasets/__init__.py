@@ -203,12 +203,13 @@ class Preprocessor:
                 for v in vad_result
             ]
             silences = []
-            if vad_result[0][0] != 0:
-                silences.append((0, vad_result[0][0]))
-            for i in range(len(vad_result) - 1):
-                silences.append((vad_result[i][1], vad_result[i + 1][0]))
-            if vad_result[-1][1] <= max_len:
-                silences.append((vad_result[-1][1], max_len))
+            if len(vad_result) > 0:
+                if vad_result[0][0] != 0:
+                    silences.append((0, vad_result[0][0]))
+                for i in range(len(vad_result) - 1):
+                    silences.append((vad_result[i][1], vad_result[i + 1][0]))
+                if vad_result[-1][1] <= max_len:
+                    silences.append((vad_result[-1][1], max_len))
             all_silences.append(silences)
         predicted_ids = []
         for i in range(len(batched_audio16)):
