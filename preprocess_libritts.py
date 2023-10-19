@@ -25,13 +25,13 @@ def set_seed(seed):
 set_seed(42)
 
 splits = {
-    # "train_clean_100": "train.clean.100",
-    # "train_clean_360": "train.clean.360",
-    # "train_other_500": "train.other.500",
+    "train_clean_100": "train.clean.100",
+    "train_clean_360": "train.clean.360",
+    "train_other_500": "train.other.500",
     "dev_clean": "dev.clean",
-    # "dev_other": "dev.other",
-    # "test_clean": "test.clean",
-    # "test_other": "test.other",
+    "dev_other": "dev.other",
+    "test_clean": "test.clean",
+    "test_other": "test.other",
 }
 
 # argument for device
@@ -57,5 +57,4 @@ for split, name in splits.items():
     for i, batch in tqdm(
         enumerate(dataloader), desc=f"Preprocessing {split}", total=len(dataloader)
     ):
-        if i > 99:
-            break
+        pass

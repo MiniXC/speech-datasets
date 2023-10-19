@@ -6,25 +6,14 @@ from torch import nn
 import numpy as np
 import torchaudio
 from transformers import Wav2Vec2Processor, Wav2Vec2ForCTC
-from scipy import signal
 from PIL import Image
 from vocex import Vocex
-import humanhash
 import json
-import webrtcvad
 
 # for hashing
 from hashlib import sha256
 
 from simple_hifigan import Synthesiser
-
-
-def silent_remove(filename):
-    try:
-        os.remove(filename)
-    except OSError as e:  # this would be "except OSError, e:" before Python 2.6
-        if e.errno != errno.ENOENT:  # errno.ENOENT = no such file or directory
-            raise  # re-raise exception if a different error occurred
 
 
 def resample_nearest(array, new_length):
@@ -81,37 +70,12 @@ def repeated_phones_to_phones_and_lengths(phones):
     return phone_list, phone_lengths
 
 
-def resample_np(sequence, new_length):
-    indices = np.linspace(0, len(sequence) - 1, new_length)
-    rounded_indices = np.round(indices).astype(int)
-    resampled = sequence[rounded_indices]
-    return resampled
-
-
-def flatten_list(l):
-    return [item for sublist in l for item in sublist]
-
-
-def drc(x, C=1, clip_val=1e-7):
-    return torch.log(torch.clamp(x, min=clip_val) * C)
-
-
 def to_img(x, min_val=0, max_val=1):
     x = torch.from_numpy(x)
     x = torch.clamp(x, min=min_val, max=max_val)
     x = (x - min_val) / (max_val - min_val)
     x = x * 255
     x = x.type(torch.uint8)
-    x = x.flip(1)
-    return x
-
-
-def from_img(x, min_val=0, max_val=1):
-    x = torch.from_numpy(x)
-    x = x.type(torch.float32)
-    x = x / 255
-    x = x * (max_val - min_val)
-    x = x + min_val
     x = x.flip(1)
     return x
 
