@@ -285,8 +285,7 @@ class LibrispeechASR(datasets.GeneratorBasedBuilder):
         for path, f in files:
             if path.endswith(".flac"):
                 id_ = path.split("/")[-1][: -len(".flac")]
-                audio_data[id_] = f.read()
-                audio_file = os.path.join(local_extracted_archive, path)
+                audio_data[id_] = os.path.join(local_extracted_archive, path)
             elif path.endswith(".trans.txt"):
                 for line in f:
                     if line:
@@ -295,12 +294,12 @@ class LibrispeechASR(datasets.GeneratorBasedBuilder):
                         speaker_id, chapter_id = [int(el) for el in id_.split("-")[:2]]
                         transcripts.append(
                             {
-                                "id": audio_file.split("/")[-1].split(".")[0]
+                                "id": audio_data[id_].split("/")[-1].split(".")[0]
                                 + "-"
                                 + id_,
                                 "speaker": speaker_id,
                                 "chapter": chapter_id,
-                                "file": audio_file,
+                                "file": audio_data[id_],
                                 "text": transcript,
                             }
                         )
