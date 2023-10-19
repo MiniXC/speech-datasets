@@ -245,10 +245,9 @@ class Preprocessor:
         batched_speaker = []
         batched_speaker_global = []
 
-        for i in range(len(new_batch)):
-            if i in skip_idxs:
-                continue
+        new_batch = [new_batch[i] for i in range(len(new_batch)) if i not in skip_idxs]
 
+        for i in range(len(new_batch)):
             save_dir = book_dirs[i]
             utt_hash = hashes[i]
             # write text
