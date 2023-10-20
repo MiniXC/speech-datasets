@@ -24,9 +24,13 @@ splits = {
 parser = argparse.ArgumentParser()
 parser.add_argument("--device", type=str, default="cuda:0")
 parser.add_argument("--target_location", type=str, default="data")
-parser.add_argument("--batch_size", type=int, default=1)
-parser.add_argument("--num_workers", type=int, default=3)
+parser.add_argument("--batch_size", type=int, default=4)
+parser.add_argument("--num_workers", type=int, default=None)
+parser.add_argument("--spawn", type=bool, default=False)
 args = parser.parse_args()
+
+if args.use_spawn_multiprocessing:
+    torch.multiprocessing.set_start_method("spawn")
 
 for split, name in splits.items():
     BATCH_SIZE = args.batch_size

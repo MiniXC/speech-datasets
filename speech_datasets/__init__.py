@@ -190,9 +190,10 @@ class Preprocessor:
         for j, audio16 in enumerate(batched_audio16):
             # add half a second of silence to the start and end
             audio16 = torch.cat([torch.zeros(8000), audio16, torch.zeros(8000)], dim=0)
-            vad_result = self.get_speech_timestamps(
-                audio16.to(self.device), self.vad_model, sampling_rate=16000
-            )
+            with torch.no_grad():
+                vad_result = self.get_speech_timestamps(
+                    audio16.to(self.device), self.vad_model, sampling_rate=16000
+                )
             vad_factor = mels[j].shape[0] / (len(audio16) - 16000)
             max_len = mels[j].shape[0]
             vad_result = [
