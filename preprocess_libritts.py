@@ -29,7 +29,7 @@ parser.add_argument("--num_workers", type=int, default=None)
 parser.add_argument("--spawn", type=bool, default=False)
 args = parser.parse_args()
 
-if args.use_spawn_multiprocessing:
+if args.spawn:
     torch.multiprocessing.set_start_method("spawn")
 
 for split, name in splits.items():
