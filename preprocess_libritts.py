@@ -24,10 +24,12 @@ splits = {
 parser = argparse.ArgumentParser()
 parser.add_argument("--device", type=str, default="cuda:0")
 parser.add_argument("--target_location", type=str, default="data")
+parser.add_argument("--batch_size", type=int, default=1)
+parser.add_argument("--num_workers", type=int, default=3)
 args = parser.parse_args()
 
 for split, name in splits.items():
-    BATCH_SIZE = 4
+    BATCH_SIZE = args.batch_size
     dataloader = DataLoader(
         dataset[name],
         batch_size=BATCH_SIZE,
@@ -37,6 +39,7 @@ for split, name in splits.items():
             device=args.device,
             allow_overwrite=True,
         ),
+        num_workers=args.num_workers,
     )
 
     for i, batch in tqdm(
