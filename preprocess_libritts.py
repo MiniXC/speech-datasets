@@ -11,13 +11,13 @@ from speech_datasets import Preprocessor
 dataset = load_dataset("cdminix/libritts-aligned")
 
 splits = {
-    "train_clean_100": "train.clean.100",
-    "train_clean_360": "train.clean.360",
-    "train_other_500": "train.other.500",
+    # "train_clean_100": "train.clean.100",
+    # "train_clean_360": "train.clean.360",
+    # "train_other_500": "train.other.500",
     "dev_clean": "dev.clean",
-    "dev_other": "dev.other",
-    "test_clean": "test.clean",
-    "test_other": "test.other",
+    # "dev_other": "dev.other",
+    # "test_clean": "test.clean",
+    # "test_other": "test.other",
 }
 
 # argument for device
@@ -25,12 +25,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--device", type=str, default="cuda:0")
 parser.add_argument("--target_location", type=str, default="data")
 parser.add_argument("--batch_size", type=int, default=4)
-parser.add_argument("--num_workers", type=int, default=None)
-parser.add_argument("--spawn", type=bool, default=False)
+parser.add_argument("--num_workers", type=int, default=0)
 args = parser.parse_args()
-
-if args.spawn:
-    torch.multiprocessing.set_start_method("spawn")
 
 for split, name in splits.items():
     BATCH_SIZE = args.batch_size

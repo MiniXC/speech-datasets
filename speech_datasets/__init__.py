@@ -212,18 +212,90 @@ class Preprocessor:
                 if vad_result[-1][1] <= max_len:
                     silences.append((vad_result[-1][1], max_len))
             all_silences.append(silences)
-        predicted_ids = []
+
+        # predicted_ids = []
+        # for i in range(len(batched_audio16)):
+        #     input_values = self.phone_processor(
+        #         batched_audio16[i],
+        #         return_tensors="pt",
+        #         sampling_rate=16000,
+        #     ).input_values
+        #     with torch.no_grad():
+        #         logits = self.phone_model(input_values.to(self.device)).logits.cpu()
+        #     ids = torch.argmax(logits, dim=-1)[0].numpy()
+        #     ids = resample_nearest(ids, mels[i].shape[0])
+        #     predicted_ids.append(ids)
+
+        predicted_ids_using_batched_audio = []
+        audio16_lengths = [len(audio16) for audio16 in batched_audio16]
+        batched_audio16 = nn.utils.rnn.pad_sequence(
+            batched_audio16, batch_first=True, padding_value=0
+        )
+        input_values = self.phone_processor(
+            batched_audio16,
+            return_tensors="pt",
+            sampling_rate=16000,
+        ).input_values[0]
+        with torch.no_grad():
+            logits = self.phone_model(input_values.to(self.device)).logits.cpu()
+        audio_to_id_factor = logits.shape[1] / batched_audio16.shape[1]
         for i in range(len(batched_audio16)):
-            input_values = self.phone_processor(
-                batched_audio16[i],
-                return_tensors="pt",
-                sampling_rate=16000,
-            ).input_values
-            with torch.no_grad():
-                logits = self.phone_model(input_values.to(self.device)).logits.cpu()
-            ids = torch.argmax(logits, dim=-1)[0].numpy()
+            ids = torch.argmax(logits[i], dim=-1).numpy()
+            # cut off padding
+            ids = ids[: round(audio16_lengths[i] * audio_to_id_factor)]
             ids = resample_nearest(ids, mels[i].shape[0])
-            predicted_ids.append(ids)
+            predicted_ids_using_batched_audio.append(ids)
+
+        predicted_ids = predicted_ids_using_batched_audio
+
+        # check if predicted_ids and predicted_ids_using_batched_audio are the same
+
+        # for i in range(len(predicted_ids)):
+        #     pred_ids = predicted_ids[i]
+        #     pred_ids = pred_ids[pred_ids != 0]
+        #     # deduplicate
+        #     pred_ids = [pred_ids[0]] + [
+        #         pred_ids[j]
+        #         for j in range(1, len(pred_ids))
+        #         if pred_ids[j] != pred_ids[j - 1]
+        #     ]
+        #     pred_ids = np.array(pred_ids)
+        #     pred_ids_using_batched_audio = predicted_ids_using_batched_audio[i]
+        #     pred_ids_using_batched_audio = pred_ids_using_batched_audio[
+        #         pred_ids_using_batched_audio != 0
+        #     ]
+        #     # deduplicate
+        #     pred_ids_using_batched_audio = [pred_ids_using_batched_audio[0]] + [
+        #         pred_ids_using_batched_audio[j]
+        #         for j in range(1, len(pred_ids_using_batched_audio))
+        #         if pred_ids_using_batched_audio[j]
+        #         != pred_ids_using_batched_audio[j - 1]
+        #     ]
+        #     pred_ids_using_batched_audio = np.array(pred_ids_using_batched_audio)
+        #     diff_arr = predicted_ids[i] - predicted_ids_using_batched_audio[i]
+        #     diff_arr = np.abs(diff_arr[diff_arr != 0])
+        #     # deduplicate
+        #     if len(diff_arr) > 1:
+        #         diff_arr = [diff_arr[0]] + [
+        #             diff_arr[j]
+        #             for j in range(1, len(diff_arr))
+        #             if diff_arr[j] != diff_arr[j - 1]
+        #         ]
+        #     diff_pct = len(diff_arr) / len(predicted_ids[i])
+        #     print(diff_pct)
+        #     if (
+        #         not len(predicted_ids[i]) == len(predicted_ids_using_batched_audio[i])
+        #         or diff_pct > 0.1
+        #     ):
+        #         print(
+        #             "predicted_ids and predicted_ids_using_batched_audio are not the same"
+        #         )
+        #         print(batch[i]["text"])
+        #         print([self.id2phone[pred_id] for pred_id in pred_ids])
+        #         print(
+        #             [self.id2phone[pred_id] for pred_id in pred_ids_using_batched_audio]
+        #         )
+        #         raise ValueError
 
         skip_idxs = []
 
