@@ -134,6 +134,7 @@ class Preprocessor:
         ) = utils
         self.get_speech_timestamps = get_speech_timestamps
         self.vad_model = model
+        self.vad_model.to(self.device)
 
     def __call__(self, batch):
         batched_audio = []
@@ -190,7 +191,7 @@ class Preprocessor:
             # add half a second of silence to the start and end
             audio16 = torch.cat([torch.zeros(8000), audio16, torch.zeros(8000)], dim=0)
             vad_result = self.get_speech_timestamps(
-                audio16, self.vad_model, sampling_rate=16000
+                audio16.to(self.device), self.vad_model, sampling_rate=16000
             )
             vad_factor = mels[j].shape[0] / (len(audio16) - 16000)
             max_len = mels[j].shape[0]
