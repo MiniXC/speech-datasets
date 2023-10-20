@@ -24,7 +24,6 @@ parser.add_argument("--device", type=str, default="cuda:0")
 parser.add_argument("--target_location", type=str, default="data")
 parser.add_argument("--batch_size", type=int, default=4)
 parser.add_argument("--num_workers", type=int, default=0)
-parser.add_argument("--prefetch_factor", type=int, default=4)
 args = parser.parse_args()
 
 
@@ -40,7 +39,6 @@ for split, name in splits.items():
             allow_overwrite=True,
         ),
         num_workers=args.num_workers,
-        prefetch_factor=args.prefetch_factor,
     )
 
     for i, batch in tqdm(
