@@ -5,7 +5,7 @@ pillow>=10.0.1
 vocex==0.1.11
 humanhash3>=0.0.6
 datasets>=2.14.5
-alignments>=0.1.7
+alignments @ git@github.com:MiniXC/alignments.git
 phonemizer>=3.2.1
 umap-learn>=0.5.4
 phones==0.0.7
