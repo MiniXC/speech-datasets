@@ -302,6 +302,11 @@ class Preprocessor:
 
             # phones
             np.save(save_dir / f"{utt_hash}_phones.npy", phone_list.astype(np.ushort))
+            # phone lengths
+            np.save(
+                save_dir / f"{utt_hash}_phone_lengths.npy",
+                phone_lengths.astype(np.ushort),
+            )
 
             vad = vocex_results["measures"]["voice_activity_binary"][0]
             vad = torch.clamp(vad, self.vad_range[0], self.vad_range[1])
