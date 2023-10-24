@@ -117,7 +117,7 @@ class Preprocessor:
         self.energy_range = (0, 0.5)
         self.vad_range = (0, 1)
         self.speaker_range = (-200, 200)
-        self.length_range = (0, 8)
+        self.length_range = (0, 11)
         self.mel_range = (-11, 2)
         self.n_planes = 40
         # torch.random.manual_seed(0)
